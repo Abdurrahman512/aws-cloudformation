@@ -1,0 +1,54 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: >
+  create ec2
+
+
+Resources:
+  EC2instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-034968955444c1fd9    # require
+      KeyName: aws-ssh-key
+      InstanceType: t2.micro     # optional
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet:
+            - !Ref "EC2SG"
+          SubnetId: !ImportValue "aws-infra-publicsubnet1a"
+      Tags:
+        - Key: Name
+          Value: aws-infra-ec2
+
+  EC2SG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: SSH and HTTP access only myip  # required
+      GroupName: aws-infra-web   # optional
+      VpcId: !ImportValue aws-infra-vpc
+      #インバウンドルール
+      SecurityGroupIngress:
+        - IpProtocol: tcp #http
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp #ssh
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0            # optional, list of Ingress
+      Tags:
+        - Key: Name
+          Value: aws-infra-sg
+
+Outputs:
+  EC2Instance:
+    Value: !Ref EC2instance
+    Export:
+      Name: aws-infra-ec2
+
+  SecurityGroup:
+    Value: !Ref EC2SG
+    Export:
+      Name: aws-infra-sg

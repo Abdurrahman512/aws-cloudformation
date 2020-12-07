@@ -1,0 +1,119 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: >
+  create vpc
+
+Resources:
+
+#VPC
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16    # required
+      EnableDnsHostnames: true    # optional
+      EnableDnsSupport:  true    # optional
+      InstanceTenancy: default     # optional
+      Tags:                # optional, list of Tag
+        - Key: Name
+          Value: aws-infra-vpc
+#サブネット1a（パブリック）
+  PubSub:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: "ap-northeast-1a"     # optional
+      CidrBlock: 10.0.10.0/24    # required
+      Tags:                # optional, list of Tag
+        - Key: Name
+          Value: aws-infra-publicsubnet1a
+      VpcId: !Ref VPC     # required
+
+#サブネット1a（プライベート）
+  PriSub1a:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: "ap-northeast-1a"     # optional
+      CidrBlock: 10.0.20.0/24   # required
+      Tags:                # optional, list of Tag
+        - Key: Name
+          Value: aws-infra-privatesubnet1a
+      VpcId: !Ref VPC    # required
+
+#サブネット1c（プライベート）
+  PriSub1c:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: "ap-northeast-1c"    # optional
+      CidrBlock: 10.0.30.0/24   # required
+      Tags:                # optional, list of Tag
+        - Key: Name
+          Value: aws-infra-privatesubnet1c
+      VpcId: !Ref VPC    # required
+
+#インターネットゲートウェイ
+  Igw:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:                # optional, list of Tag
+        - Key: Name
+          Value: aws-infra-igw
+
+#EIP
+  Eip:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: VPC     # optional
+
+
+#IGWをVPCにアタッチ
+  Agw:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref Igw   # optional
+      VpcId: !Ref VPC  # required
+
+#ルートテーブル
+  RT01:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:                # optional, list of Tag
+        - Key: Name
+          Value: aws-infra-public-route
+      VpcId: !Ref VPC    # required
+
+#サブネット1に関連付け
+  RTassociation1a:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref RT01     # required
+      SubnetId: !Ref PubSub    # required
+
+#ルート編集
+  Route01:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0     # optional
+      GatewayId: !Ref Igw  # optional
+      RouteTableId: !Ref RT01     # required
+
+
+Outputs:
+  VPC:
+    Value: !Ref VPC
+    Export:
+      Name: aws-infra-vpc
+
+  PubSub:
+    Value: !Ref PubSub
+    Export:
+      Name: aws-infra-publicsubnet1a
+
+  Subnet2a:
+    Value: !Ref PriSub1c
+    Export:
+      Name: aws-infra-privatesubnet1c
+
+  Subnet3a:
+    Value: !Ref PriSub1a
+    Export:
+      Name: aws-infra-privatesubnet1a

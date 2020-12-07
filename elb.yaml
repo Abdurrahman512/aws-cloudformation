@@ -1,0 +1,46 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: >
+  creat elb
+
+Resources:
+  ALB:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      IpAddressType: ipv4   # optional
+      Name: aws-infra-alb   # optional
+      Scheme:  internet-facing        # optional
+      SecurityGroups:                # optional, list of String
+        - !ImportValue aws-infra-sg
+      Subnets:                # optional, list of String
+        - !ImportValue aws-infra-publicsubnet1a
+        - !ImportValue aws-infra-privatesubnet1c
+      Tags:                # optional, list of Tag
+        - Key: Name
+          Value: aws-infra-alb
+      Type: application
+
+  ELBTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 10  # optional
+      HealthCheckPath: /  # optional
+      HealthCheckPort: traffic-port    # optional
+      HealthCheckProtocol: HTTP    # optional
+      HealthCheckTimeoutSeconds: 5     # optional
+      HealthyThresholdCount: 5   # optional
+      UnhealthyThresholdCount: 2
+      Matcher:
+        HttpCode: 200     # optional
+      Name: aws-infra-albtg     # optional
+      Port: 80    # required
+      Protocol: HTTP    # required
+      TargetType: instance
+      Tags:
+        - Key: Name
+          Value: aws-infra-albtg               # optional, list of Tag          - Tag
+      Targets:               # optional, list of TargetDescription
+        - Id: !ImportValue aws-infra-ec2
+          Port: 80
+      VpcId: !ImportValue aws-infra-vpc
